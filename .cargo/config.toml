@@ -1,0 +1,12 @@
+[build]
+target = "riscv64gc-unknown-none-elf"
+
+[target.riscv64gc-unknown-none-elf]
+# -bios default = QEMU's bundled OpenSBI, which loads our kernel as its
+# S-mode payload at 0x80200000.
+runner = "qemu-system-riscv64 -machine virt -m 128M -smp 1 -nographic -bios default -kernel"
+
+# Instruct the rust compiler to pass our linker script to the linker
+rustflags = [
+    "-C", "link-arg=-Tlinker.ld",
+]
