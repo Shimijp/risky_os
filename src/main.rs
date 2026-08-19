@@ -8,7 +8,7 @@ use mmio::MMIO;
 use core::arch::{asm, global_asm};
 use core::panic::PanicInfo;
 use crate::interrupts::{asm_trap_vector, handle_interrupt};
-use crate::mmio::read;
+use crate::mmio::{init_uart, read};
 
 global_asm!(include_str!("asm/boot.S"));
 
@@ -27,13 +27,13 @@ pub extern "C" fn kmain(hartid: usize, dtb: usize) -> ! {
 
     unsafe{
         asm!(
-            "csrw stvec, {0}",
-            "li   t0, 0x02  ",
-            "csrs sstatus, t0",
-            in(reg) asm_trap_vector as *const () as usize
-        )
+        "csrw stvec, {0}",
+        "csrsi sstatus, 2",
+        in(reg) asm_trap_vector as *const () as usize
+        );
     }
     unsafe { asm!("ebreak") };
+    init_uart();
     println!("heard id is {}", hartid);
     println!("dtb at: {}", dtb);
     println!("hello from kernel");

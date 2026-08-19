@@ -42,6 +42,13 @@ pub fn read()
     {
         mmio.put(b'\n');
     }
+    /* backspace */
+    else if byte == 0x08 || byte == 127 {
+        mmio.put(0x08);
+        mmio.put(0x20);
+        mmio.put(0x08);
+        return;
+    }
     mmio.put(byte);
 }
 pub fn init_uart()

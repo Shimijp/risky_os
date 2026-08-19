@@ -96,12 +96,19 @@ pub extern "C" fn handle_interrupt()
             out("t0") cause
         );
 
-
-
-
     }
-    if cause >> 61 & 1 == 1
+    let is_int = (cause >> 63 & 1) == 1;
+    let code = cause & 0xfff;
+    if is_int
     {
-        println!("cause was: {}", cause);
+          println!("interrupt with code: {}", code);
+    }
+    else {
+        let sepc: usize;
+        unsafe { asm!("csrr {}, sepc", out(reg) sepc) };
+        let insn = unsafe { (sepc as *const u16).read_volatile() };
+        let len = if insn & 0b11 == 0b11 { 4 } else { 2 };
+        unsafe { asm!("csrw sepc, {}", in(reg) sepc + len) };
+        println!("exception with code: {}", code);
     }
 }
