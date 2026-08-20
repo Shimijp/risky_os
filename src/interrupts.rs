@@ -86,6 +86,8 @@ global_asm!(
 unsafe extern "C" {
     pub fn asm_trap_vector();
 }
+const TIMEBASE: u64 = 10_000_000; 
+
 #[unsafe(no_mangle)]
 pub extern "C" fn handle_interrupt()
 {
@@ -101,7 +103,11 @@ pub extern "C" fn handle_interrupt()
     let code = cause & 0xfff;
     if is_int
     {
-          println!("interrupt with code: {}", code);
+        match code {
+            0x5 => sbi_set_timer(rdtime() +TIMEBASE),
+            _ => ()
+        }
+
     }
     else {
         let sepc: usize;
@@ -111,4 +117,28 @@ pub extern "C" fn handle_interrupt()
         unsafe { asm!("csrw sepc, {}", in(reg) sepc + len) };
         println!("exception with code: {}", code);
     }
+}
+
+
+fn rdtime() -> u64 {
+    let t: u64;
+    unsafe { asm!("rdtime {}", out(reg) t) };
+    t
+}
+
+fn sbi_set_timer(deadline: u64) {
+    unsafe {
+        asm!(
+        "ecall",
+        in("a7") 0x5449_4D45u64,   // EID "TIME"
+        in("a6") 0u64,             // FID 0 = set_timer
+        inout("a0") deadline => _,
+        out("a1") _,
+        );
+    }
+}
+
+pub fn timer_init() {
+    unsafe { asm!("csrs sie, {}", in(reg) 1u64 << 5) };  // STIE
+    sbi_set_timer(rdtime() + TIMEBASE);
 }
