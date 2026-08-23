@@ -3,13 +3,14 @@ use crate::print;
 use core::arch::{asm, global_asm};
 use crate::println;
 global_asm!(
+
     ".section .text",
     ".align 4",
     ".global asm_trap_vector",
     "asm_trap_vector:",
 
-        "addi sp, sp, -256",
-        "sd x1, 8(sp)",
+    "addi sp, sp, -256",
+    "sd x1, 8(sp)",
     "sd x2, 16(sp)",
     "sd x3, 24(sp)",
     "sd x4, 32(sp)",
@@ -111,10 +112,18 @@ pub extern "C" fn handle_interrupt()
     }
     else {
         let sepc: usize;
-        unsafe { asm!("csrr {}, sepc", out(reg) sepc) };
+        unsafe {
+            asm!(
+            "csrr {}, sepc",
+            out(reg) sepc)
+        };
+        //move instruction by offset so will not land in trap code again
         let insn = unsafe { (sepc as *const u16).read_volatile() };
         let len = if insn & 0b11 == 0b11 { 4 } else { 2 };
-        unsafe { asm!("csrw sepc, {}", in(reg) sepc + len) };
+        unsafe {
+            asm!("csrw sepc, {}",
+            in(reg) sepc + len)
+        };
         println!("exception with code: {}", code);
     }
 }
